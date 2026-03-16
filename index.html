@@ -1,151 +1,157 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PAPERWIND INC | Earn Online</title>
+    <title>PAPERWIND INC</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+    
     <!-- Monetag SDK -->
     <script src='//libtl.com/sdk.js' data-zone='10555746' data-sdk='show_10555746'></script>
     <!-- Adsgram SDK -->
     <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+
     <style>
-        .glass-morphism { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        #timerOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; }
+        #task-viewer { display: none; position: fixed; inset: 0; background: white; z-index: 1000; }
+        .cooldown-text { font-variant-numeric: tabular-nums; }
+        /* Transparent overlay to catch double clicks over the iframe */
+        #click-catcher { position: absolute; inset: 0; z-index: 1001; cursor: pointer; }
     </style>
 </head>
-<body class="bg-gray-100 font-sans">
+<body class="bg-slate-50 font-sans text-slate-800">
 
-    <!-- Login/Auth Overlay -->
-    <div id="auth-screen" class="fixed inset-0 bg-blue-600 flex items-center justify-center z-[10000]">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl w-96 text-center">
-            <h1 class="text-3xl font-bold text-blue-600 mb-4">PAPERWIND INC</h1>
-            <p class="text-gray-500 mb-6">Enter Telegram Username to Start</p>
-            <input type="text" id="tg-username" placeholder="@username" class="w-full border p-3 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <button onclick="login()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition">LOGIN / JOIN</button>
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="fixed inset-0 bg-blue-700 flex items-center justify-center z-[10000]">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-[90%] max-w-md text-center">
+            <h1 class="text-4xl font-black text-blue-700 mb-2 italic">PAPERWIND</h1>
+            <p class="text-slate-500 mb-8 uppercase tracking-widest text-xs font-bold">Earn Passive Income</p>
+            <input type="text" id="tg-username" placeholder="Telegram @username" class="w-full border-2 border-slate-100 p-4 rounded-2xl mb-4 focus:border-blue-500 outline-none transition-all">
+            <button onclick="login()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-200 hover:scale-95 transition-transform">START EARNING</button>
         </div>
     </div>
 
-    <!-- Main Navigation -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-4 z-50">
-        <button onclick="showTab('tasks')" class="text-blue-600"><i class="fas fa-tasks text-xl"></i></button>
-        <button onclick="showTab('chat')" class="text-gray-400"><i class="fas fa-comments text-xl"></i></button>
-        <button onclick="showTab('referral')" class="text-gray-400"><i class="fas fa-users text-xl"></i></button>
-        <button onclick="showTab('leaderboard')" class="text-gray-400"><i class="fas fa-trophy text-xl"></i></button>
-        <button onclick="showTab('withdraw')" class="text-gray-400"><i class="fas fa-wallet text-xl"></i></button>
-        <button onclick="checkAdmin()" class="text-red-400"><i class="fas fa-user-shield text-xl"></i></button>
-    </nav>
-
-    <!-- Header Stats -->
-    <div class="bg-blue-600 p-6 text-white sticky top-0 z-40">
-        <div class="flex justify-between items-center">
-            <div>
-                <p class="text-xs opacity-80">Welcome,</p>
-                <h2 id="display-username" class="font-bold">...</h2>
+    <!-- Task Viewer Overlay -->
+    <div id="task-viewer">
+        <div class="h-14 bg-white border-b flex items-center justify-between px-4">
+            <div class="flex items-center gap-2">
+                <span id="timer-display" class="bg-blue-600 text-white px-3 py-1 rounded-full font-black text-lg">45s</span>
+                <span id="pause-status" class="text-xs font-bold text-red-500 animate-pulse uppercase">● Paused</span>
             </div>
             <div class="text-right">
-                <p class="text-xs opacity-80">Balance</p>
-                <h2 id="display-balance" class="text-2xl font-black">₱0.00</h2>
+                <p class="text-[10px] uppercase font-bold text-slate-400 leading-none">Double Click Web to</p>                <p class="text-xs font-black text-blue-600 uppercase">Resume Timer</p>
             </div>
+        </div>
+        <div class="relative w-full h-[calc(100vh-56px)]">
+            <div id="click-catcher"></div>
+            <iframe id="task-frame" src="" class="w-full h-full border-none"></iframe>
         </div>
     </div>
 
-    <div class="p-4 mb-20">
-        
+    <!-- Navigation -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-4 z-50">
+        <button onclick="showTab('tasks')" class="nav-btn text-blue-600"><i class="fas fa-bolt text-xl"></i></button>
+        <button onclick="showTab('chat')" class="nav-btn text-slate-400"><i class="fas fa-comment-dots text-xl"></i></button>
+        <button onclick="showTab('referral')" class="nav-btn text-slate-400"><i class="fas fa-gift text-xl"></i></button>
+        <button onclick="showTab('leaderboard')" class="nav-btn text-slate-400"><i class="fas fa-crown text-xl"></i></button>
+        <button onclick="showTab('withdraw')" class="nav-btn text-slate-400"><i class="fas fa-wallet text-xl"></i></button>
+        <button onclick="checkAdmin()" class="text-red-300"><i class="fas fa-shield-alt"></i></button>
+    </nav>
+
+    <!-- Header -->
+    <header class="bg-blue-600 p-6 text-white rounded-b-[40px] shadow-lg sticky top-0 z-40">
+        <div class="flex justify-between items-end">
+            <div>
+                <p id="display-username" class="text-blue-100 font-medium italic">@username</p>
+                <h2 id="display-balance" class="text-3xl font-black">₱0.000</h2>
+            </div>
+            <div class="bg-blue-500/30 p-2 rounded-xl text-center min-w-[80px]">
+                <p class="text-[10px] font-bold uppercase">Referrals</p>
+                <p id="total-ref" class="text-lg font-black leading-none">0</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="p-4 pb-24">
         <!-- Tasks Section -->
         <section id="tasks" class="tab-content active">
-            <h3 class="font-bold text-lg mb-4">Daily Tasks (Cooldown: 2hrs)</h3>
-            <div id="links-container" class="grid gap-3">
-                <!-- Buttons generated via JS -->
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-black text-xl italic uppercase">Available Tasks</h3>                <span class="text-[10px] bg-slate-200 px-2 py-1 rounded font-bold">2H COOLDOWN</span>
             </div>
-        </section>
-
-        <!-- Chat Section -->
-        <section id="chat" class="tab-content">
-            <div class="bg-white rounded-xl shadow p-4 h-[60vh] flex flex-col">
-                <div id="chat-messages" class="flex-1 overflow-y-auto mb-4 space-y-2"></div>
-                <div class="flex gap-2">
-                    <input type="text" id="chat-input" class="flex-1 border rounded-lg px-3" placeholder="Say something...">
-                    <button onclick="sendMessage()" class="bg-blue-600 text-white px-4 py-2 rounded-lg"><i class="fas fa-paper-plane"></i></button>
-                </div>
-            </div>
+            <div id="links-container" class="grid grid-cols-1 gap-3"></div>
         </section>
 
         <!-- Referral Section -->
         <section id="referral" class="tab-content">
-            <div class="bg-blue-50 p-6 rounded-2xl text-center mb-4 border-2 border-dashed border-blue-300">
-                <p class="text-sm">Your Referral Code</p>
-                <h2 id="my-ref-code" class="text-3xl font-black text-blue-600 tracking-widest my-2">......</h2>
-                <button onclick="copyRef()" class="text-xs bg-blue-100 text-blue-600 px-3 py-1 rounded-full">COPY CODE</button>
+            <div class="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-3xl text-white shadow-xl mb-6">
+                <p class="text-xs font-bold uppercase opacity-80 mb-2">Unique Referral Code</p>
+                <div class="flex justify-between items-center">
+                    <h2 id="my-ref-code" class="text-4xl font-black tracking-tighter">......</h2>
+                    <button onclick="copyRef()" class="bg-white/20 hover:bg-white/30 p-3 rounded-2xl transition"><i class="fas fa-copy"></i></button>
+                </div>
+                <div class="mt-6 pt-6 border-t border-white/10 flex justify-between">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase opacity-70">Ref Earnings</p>
+                        <p id="ref-earnings" class="text-xl font-black">₱0.000</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[10px] font-bold uppercase opacity-70">Commission</p>
+                        <p class="text-xl font-black">10%</p>
+                    </div>
+                </div>
             </div>
-            <div class="bg-white p-4 rounded-xl shadow mb-4">
-                <p class="text-sm mb-2 text-gray-600">Enter Inviter Code (Earn 10% from them):</p>
+            <div class="bg-white p-4 rounded-2xl shadow-sm border"
+                <p class="text-xs font-bold mb-3 uppercase text-slate-400">Enter Inviter Code</p>
                 <div class="flex gap-2">
-                    <input type="text" id="input-ref-code" maxlength="6" class="flex-1 border p-2 rounded text-center font-bold">
-                    <button onclick="submitReferral()" class="bg-green-500 text-white px-4 py-2 rounded">Submit</button>
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="bg-white p-4 rounded-xl shadow text-center">
-                    <p class="text-xs text-gray-500">Total Referrals</p>
-                    <h3 id="total-ref" class="text-xl font-bold">0</h3>
-                </div>
-                <div class="bg-white p-4 rounded-xl shadow text-center">
-                    <p class="text-xs text-gray-500">Referral Earnings</p>
-                    <h3 id="ref-earnings" class="text-xl font-bold text-green-600">₱0.00</h3>
+                    <input type="text" id="input-ref-code" maxlength="6" class="flex-1 bg-slate-50 p-3 rounded-xl border-none outline-none font-bold text-center">
+                    <button onclick="submitReferral()" class="bg-blue-600 text-white px-6 rounded-xl font-bold">Apply</button>
                 </div>
             </div>
         </section>
 
         <!-- Leaderboard -->
         <section id="leaderboard" class="tab-content">
-            <h3 class="font-bold text-lg mb-4">Top Earners</h3>
-            <div id="leaderboard-list" class="bg-white rounded-xl shadow divide-y"></div>
+            <h3 class="font-black text-xl italic mb-4 uppercase">Global Ranking</h3>
+            <div id="leaderboard-list" class="bg-white rounded-3xl shadow-sm overflow-hidden border"></div>
+        </section>
+
+        <!-- Chat -->
+        <section id="chat" class="tab-content">
+            <div class="bg-white rounded-3xl shadow-sm border h-[65vh] flex flex-col overflow-hidden">
+                <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3"></div>
+                <div class="p-3 bg-slate-50 border-t flex gap-2">
+                    <input type="text" id="chat-input" class="flex-1 bg-white border p-3 rounded-2xl outline-none text-sm" placeholder="Type message...">
+                    <button onclick="sendMessage()" class="bg-blue-600 text-white w-12 h-12 rounded-2xl flex items-center justify-center"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
         </section>
 
         <!-- Withdraw Section -->
         <section id="withdraw" class="tab-content">
-            <div class="bg-white p-6 rounded-xl shadow mb-6">
-                <select id="withdraw-method" class="w-full border p-3 rounded mb-4">
-                    <option value="
-
-GCash">GCash</option>
+            <div class="bg-white p-6 rounded-3xl shadow-sm border mb-6">
+                <h3 class="font-bold mb-4 uppercase text-xs">Payout Details</h3>
+                <select id="withdraw-method" class="w-full bg-slate-50 p-4 rounded-2xl mb-4 outline-none font-bold">
+                    <option value="GCash">GCash</option>
                     <option value="PayPal">PayPal</option>
                     <option value="FaucetPay">FaucetPay</option>
                 </select>
-                <input type="text" id="withdraw-details" placeholder="Account Number / Email" class="w-full border p-3 rounded mb-4">
-                <input type="number" id="withdraw-amount" placeholder="Amount (₱)" class="w-full border p-3 rounded mb-4">
-                <button onclick="requestWithdraw()" class="w-full bg-green-600 text-white py-3 rounded-lg font-bold">WITHDRAW NOW</button>
+                <input type="text" id="withdraw-details" placeholder="Account Name / Number" class="w-full bg-slate-50 p-4 rounded-2xl mb-4 outline-none">
+                <input type="number" id="withdraw-amount" placeholder="Amount (PHP)" class="w-full bg-slate-50 p-4 rounded-2xl mb-4 outline-none">
+                <button onclick="requestWithdraw()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-black shadow-lg shadow-green-100">SUBMIT REQUEST</button>
             </div>
-            <h4 class="font-bold mb-2">History</h4>
-            <div id="withdraw-history" class="text-xs space-y-2"></div>
+            <h4 class="font-bold text-xs uppercase text-slate-400 mb-3 px-2">Recent History</h4>
+            <div id="withdraw-history" class="space-y-2"></div>
         </section>
 
-        <!-- Admin Section -->
+        <!-- Admin -->
         <section id="admin-panel" class="tab-content">
-            <h3 class="font-bold text-xl text-red-600 mb-4">Admin Dashboard</h3>
+            <h3 class="font-black text-red-600 mb-4">PENDING APPROVALS</h3>
             <div id="admin-withdrawals" class="space-y-4"></div>
         </section>
-    </div>
+    </main>
 
-    <!-- Timer Overlay -->
-    <div id="timerOverlay">
-        <div class="h-full flex flex-col items-center justify-center text-white p-6 text-center">
-            <h2 class="text-4xl font-black mb-4" id="seconds">45s</h2>
-            <div id="timerMessage" class="text-xl text-yellow-400 font-bold mb-8">Timer Running...</div>
-            <div class="bg-white/10 p-6 rounded-2xl border border-white/20">
-                <p class="mb-4">Timer pauses every 5 seconds!</p>
-                <p class="text-blue-400 font-bold animate-pulse">DOUBLE CLICK ANYWHERE TO RESUME</p>
-            </div>
-            <div class="mt-8 opacity-50 text-sm">Task: Stay on the opened page while timer runs</div>
-        </div>
-    </div>
-
-    <!-- Firebase Scripts -->
     <script type="module" src="app.js"></script>
 </body>
 </html>
